@@ -286,10 +286,11 @@
       try{
         if(loginMsg) loginMsg.textContent = "";
         const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
         await auth.signInWithPopup(provider);
       }catch(err){
         console.error("Erro no login:", err);
-        if(loginMsg) loginMsg.textContent = "Não foi possível entrar. Tente de novo.";
+        if(loginMsg) loginMsg.textContent = "Erro: " + (err && err.code ? err.code : "desconhecido") + " — " + (err && err.message ? err.message : "");
       }
     });
   }
