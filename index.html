@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Estoque — Galeria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0A;
+    --bg-elev:#161616;
+    --ink:#F2F2F2;
+    --ink-dim:#9A9A9A;
+    --line:#2A2A2A;
+    --accent:#8AB4F8;
+    --danger:#E8695B;
+    --amber:#E0A94D;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif; min-height:100vh;
+  }
+  .hidden{display:none !important;}
+
+  /* ---- top bar ---- */
+  header.topbar{
+    position:sticky; top:0; z-index:30; background:var(--bg);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px;}
+  .brand .dot{width:8px; height:8px; border-radius:50%; background:var(--accent);}
+  .topbar-actions{display:flex; align-items:center; gap:14px;}
+  .icon-btn{
+    width:36px; height:36px; border-radius:50%; border:none; background:var(--bg-elev);
+    color:var(--ink); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{background:#232323;}
+  .search-input{
+    background:var(--bg-elev); border:1px solid var(--line); border-radius:24px;
+    padding:8px 16px; color:var(--ink); font-size:13px; width:220px;
+  }
+  .search-input::placeholder{color:var(--ink-dim);}
+
+  main{max-width:1400px; margin:0 auto; padding:0 20px 100px;}
+
+  /* ---- home: album grid ---- */
+  #viewHome .home-title{
+    font-family:'Inter',sans-serif; font-size:22px; font-weight:700; margin:28px 0 18px;
+  }
+  .album-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:18px;
+  }
+  .album-card{
+    cursor:pointer; border-radius:var(--radius); overflow:hidden; background:var(--bg-elev);
+    border:1px solid var(--line); transition:transform .15s ease;
+  }
+  .album-card:hover{transform:translateY(-2px);}
+  .album-cover{
+    width:100%; aspect-ratio:4/3; background:#1C1C1C center/cover no-repeat;
+    display:flex; align-items:center; justify-content:center; color:var(--ink-dim); font-size:34px;
+    position:relative;
+  }
+  .album-cover .mini{
+    position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px;
+  }
+  .album-cover .mini div{background-size:cover; background-position:center; background-color:#1C1C1C;}
+  .album-info{padding:10px 12px;}
+  .album-name{font-weight:600; font-size:14px;}
+  .album-count{font-size:12px; color:var(--ink-dim); margin-top:2px;}
+
+  .empty-home{
+    text-align:center; padding:80px 20px; color:var(--ink-dim); font-size:13px;
+  }
+
+  /* ---- album detail ---- */
+  #viewAlbum .album-header{
+    padding:50px 0 18px; text-align:center;
+  }
+  #viewAlbum .back-btn{
+    display:inline-flex; align-items:center; gap:6px; background:none; border:none;
+    color:var(--ink-dim); font-size:13px; cursor:pointer; margin-bottom:18px;
+  }
+  #viewAlbum .back-btn:hover{color:var(--ink);}
+  #viewAlbum .album-title{
+    font-family:'Archivo Black',sans-serif; font-weight:400; font-size:56px; letter-spacing:1px;
+    color:#D8D8D8; line-height:1;
+  }
+  @media (max-width:640px){ #viewAlbum .album-title{ font-size:34px; } }
+  #viewAlbum .album-sub{ color:var(--ink-dim); font-size:13px; margin-top:14px; }
+
+  .photo-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:6px; margin-top:24px;
+  }
+  .photo-tile{
+    position:relative; aspect-ratio:1/1; background:#161616 center/cover no-repeat;
+    cursor:pointer; border-radius:3px; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; color:var(--ink-dim); font-size:24px;
+  }
+  .photo-tile .badge{
+    position:absolute; top:6px; right:6px; font-size:10px; font-weight:700; letter-spacing:0.5px;
+    padding:2px 6px; border-radius:3px; text-transform:uppercase;
+  }
+  .badge-vendido{background:rgba(232,105,91,0.85); color:#fff;}
+  .badge-evento{background:rgba(224,169,77,0.9); color:#241a06;}
+  .photo-tile .price-tag{
+    position:absolute; bottom:0; left:0; right:0; padding:5px 7px; font-size:11px;
+    background:linear-gradient(transparent, rgba(0,0,0,0.75)); color:#fff; opacity:0;
+    transition:opacity .12s ease;
+  }
+  .photo-tile:hover .price-tag{opacity:1;}
+
+  /* ---- lightbox / item detail ---- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:100;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .lightbox{
+    display:flex; max-width:1000px; width:100%; max-height:90vh; background:#111;
+    border-radius:8px; overflow:hidden; border:1px solid var(--line);
+  }
+  @media (max-width:760px){ .lightbox{flex-direction:column; overflow-y:auto;} }
+  .lb-photo{
+    flex:1.3; background:#000 center/contain no-repeat; min-height:280px;
+    display:flex; align-items:center; justify-content:center; color:var(--ink-dim); font-size:40px;
+  }
+  .lb-panel{
+    flex:1; padding:22px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;
+  }
+  .lb-panel .close-btn{
+    align-self:flex-end; background:none; border:none; color:var(--ink-dim); font-size:20px; cursor:pointer;
+  }
+  .lb-code{font-family:monospace; font-size:12px; color:var(--accent); letter-spacing:1px;}
+  .lb-title{font-size:19px; font-weight:700;}
+  .lb-field{font-size:13px; color:var(--ink-dim);}
+  .lb-field b{color:var(--ink); font-weight:600;}
+  .lb-price{font-size:22px; font-weight:700; color:var(--ink); margin-top:4px;}
+  .lb-toggles{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+  .lb-toggle{
+    font-size:12px; font-weight:600; padding:7px 12px; border-radius:20px; cursor:pointer;
+    border:1px solid var(--line); background:var(--bg-elev); color:var(--ink-dim);
+  }
+  .lb-toggle.active-vendido{background:var(--danger); border-color:var(--danger); color:#fff;}
+  .lb-toggle.active-evento{background:var(--amber); border-color:var(--amber); color:#241a06;}
+  .lb-delete{
+    margin-top:auto; font-size:12px; color:var(--danger); background:none; border:none;
+    cursor:pointer; text-align:left; padding:0;
+  }
+
+  /* ---- add button + modal ---- */
+  .fab{
+    position:fixed; right:24px; bottom:24px; width:56px; height:56px; border-radius:50%;
+    background:var(--accent); color:#06182F; font-size:26px; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; z-index:40;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4);
+  }
+  .add-modal{
+    background:#141414; width:100%; max-width:460px; border-radius:8px; border:1px solid var(--line);
+    padding:22px; max-height:90vh; overflow-y:auto;
+  }
+  .add-modal h2{font-size:16px; margin:0 0 16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:11px; color:var(--ink-dim); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;}
+  .field input, .field select{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:5px;
+    background:#0E0E0E; color:var(--ink); font-size:13.5px;
+  }
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .photo-box{
+    display:flex; align-items:center; gap:10px; border:1.5px dashed var(--line);
+    border-radius:6px; padding:8px; background:#0E0E0E;
+  }
+  .photo-preview{
+    width:52px; height:52px; flex:none; background:#1c1c1c center/cover no-repeat;
+    border-radius:4px; display:flex; align-items:center; justify-content:center; color:var(--ink-dim);
+  }
+  .photo-box input[type=file]{display:none;}
+  .photo-btn{
+    font-size:12px; border:1px solid var(--line); background:transparent; color:var(--ink);
+    padding:8px 12px; cursor:pointer; border-radius:5px;
+  }
+  .btn{
+    font-size:13px; font-weight:600; padding:10px 16px; border-radius:6px; cursor:pointer;
+    border:1px solid var(--line); background:#1c1c1c; color:var(--ink);
+  }
+  .btn-primary{background:var(--accent); border-color:var(--accent); color:#06182F;}
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .btn-row{display:flex; gap:10px; margin-top:6px;}
+  .msg{font-size:12.5px; padding:8px 10px; border-radius:5px; margin-bottom:10px; display:none;}
+  .msg.show{display:block;}
+  .msg.ok{background:rgba(138,180,248,0.12); color:var(--accent);}
+  .msg.err{background:rgba(232,105,91,0.12); color:var(--danger);}
+
+  ::placeholder{color:#5A5A5A;}
+</style>
+</head>
+<body>
+
+<div id="loginGate" class="overlay" style="background:#0A0A0A;">
+  <div style="text-align:center;">
+    <div style="font-weight:700; font-size:20px; margin-bottom:6px;">Bazaar Importados</div>
+    <div style="color:var(--ink-dim); font-size:13px; margin-bottom:24px;">Entre com sua conta Google pra acessar o estoque</div>
+    <button id="googleSignInBtn" class="btn btn-primary" style="padding:12px 22px; font-size:14px;">Entrar com Google</button>
+    <div id="loginMsg" style="color:var(--danger); font-size:12.5px; margin-top:14px;"></div>
+  </div>
+</div>
+
+<div id="appRoot" class="hidden">
+<header class="topbar">
+  <div class="brand"><span class="dot"></span> Bazaar Importados</div>
+  <div class="topbar-actions">
+    <input type="search" id="searchInput" class="search-input" placeholder="Buscar código, item, marca...">
+    <div class="icon-btn" id="syncDot" title="status de sincronização">●</div>
+    <button class="icon-btn" id="signOutBtn" title="Sair">⎋</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===== HOME: album grid ===== -->
+  <section id="viewHome">
+    <p class="home-title">Álbuns</p>
+    <div id="albumGrid" class="album-grid"></div>
+    <div id="emptyHome" class="empty-home hidden">Nenhuma peça cadastrada ainda. Toque no "+" pra adicionar a primeira.</div>
+  </section>
+
+  <!-- ===== ALBUM DETAIL ===== -->
+  <section id="viewAlbum" class="hidden">
+    <div class="album-header">
+      <button class="back-btn" id="backBtn">← Voltar aos álbuns</button><br>
+      <div class="album-title" id="albumTitle">—</div>
+      <div class="album-sub" id="albumSub"></div>
+    </div>
+    <div id="photoGrid" class="photo-grid"></div>
+  </section>
+
+</main>
+
+<button class="fab" id="fabAdd" title="Adicionar peça">+</button>
+
+<div id="modalRoot"></div>
+
+</div><!-- /appRoot -->
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+<script>
+(function(){
+  "use strict";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCy6NWVuvC1nVsX5fV53b9DpmKqFzwI2tc",
+    authDomain: "ir-atras.firebaseapp.com",
+    projectId: "ir-atras",
+    storageBucket: "ir-atras.firebasestorage.app",
+    messagingSenderId: "427877333576",
+    appId: "1:427877333576:web:981459abeaad210fa5b67d"
+  };
+
+  let db, storage, itemsRef, auth;
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    storage = firebase.storage();
+    itemsRef = db.collection("estoque_itens");
+    auth = firebase.auth();
+  }catch(e){
+    console.error("Falha ao iniciar Firebase:", e);
+  }
+
+  // ---------- Auth gate (Google sign-in) ----------
+  const loginGate = document.getElementById("loginGate");
+  const appRoot = document.getElementById("appRoot");
+  const googleSignInBtn = document.getElementById("googleSignInBtn");
+  const signOutBtn = document.getElementById("signOutBtn");
+  const loginMsg = document.getElementById("loginMsg");
+
+  if(googleSignInBtn){
+    googleSignInBtn.addEventListener("click", async ()=>{
+      try{
+        if(loginMsg) loginMsg.textContent = "";
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await auth.signInWithPopup(provider);
+      }catch(err){
+        console.error("Erro no login:", err);
+        if(loginMsg) loginMsg.textContent = "Não foi possível entrar. Tente de novo.";
+      }
+    });
+  }
+  if(signOutBtn){
+    signOutBtn.addEventListener("click", async ()=>{
+      try{ await auth.signOut(); }
+      catch(err){ console.error("Erro ao sair:", err); }
+    });
+  }
+  if(auth){
+    auth.onAuthStateChanged(user=>{
+      if(user){
+        if(loginGate) loginGate.classList.add("hidden");
+        if(appRoot) appRoot.classList.remove("hidden");
+      }else{
+        if(loginGate) loginGate.classList.remove("hidden");
+        if(appRoot) appRoot.classList.add("hidden");
+      }
+    });
+  }
+
+  function setSync(ok){
+    const dot = document.getElementById("syncDot");
+    if(dot) dot.style.color = ok ? "#8AB4F8" : "#E8695B";
+  }
+
+  function escapeHtml(s){
+    if(s === null || s === undefined) return "";
+    return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function fmtMoney(v){
+    if(v === null || v === undefined || isNaN(v)) return "";
+    try{ return v.toLocaleString("pt-BR", {style:"currency", currency:"BRL"}); }
+    catch(e){ return "R$ " + v; }
+  }
+  function todayISO(){
+    const d = new Date();
+    const pad = n => String(n).padStart(2,"0");
+    return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+  }
+
+  let allItems = [];
+  let currentAlbum = null;
+
+  const viewHome = document.getElementById("viewHome");
+  const viewAlbum = document.getElementById("viewAlbum");
+  const albumGrid = document.getElementById("albumGrid");
+  const emptyHome = document.getElementById("emptyHome");
+  const photoGrid = document.getElementById("photoGrid");
+  const albumTitle = document.getElementById("albumTitle");
+  const albumSub = document.getElementById("albumSub");
+  const searchInput = document.getElementById("searchInput");
+
+  function showHome(){
+    currentAlbum = null;
+    viewHome.classList.remove("hidden");
+    viewAlbum.classList.add("hidden");
+    renderHome();
+  }
+  function showAlbum(name){
+    currentAlbum = name;
+    viewHome.classList.add("hidden");
+    viewAlbum.classList.remove("hidden");
+    renderAlbum();
+  }
+  document.getElementById("backBtn").addEventListener("click", showHome);
+  if(searchInput) searchInput.addEventListener("input", ()=>{
+    if(currentAlbum) renderAlbum(); else renderHome();
+  });
+
+  function groupByAlbum(items){
+    const groups = {};
+    items.forEach(it=>{
+      const key = it.album && it.album.trim() ? it.album.trim() : "Sem álbum";
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(it);
+    });
+    return groups;
+  }
+
+  function matchesSearch(it, term){
+    if(!term) return true;
+    const hay = ((it.codigo||"")+" "+(it.item||"")+" "+(it.marca||"")+" "+(it.cor||"")+" "+(it.obs||"")).toLowerCase();
+    return hay.indexOf(term) !== -1;
+  }
+
+  function renderHome(){
+    try{
+      if(!albumGrid) return;
+      const term = (searchInput ? searchInput.value : "").trim().toLowerCase();
+      const filtered = allItems.filter(it => matchesSearch(it, term));
+      const groups = groupByAlbum(filtered);
+      const names = Object.keys(groups).sort((a,b)=> a === "Sem álbum" ? 1 : b === "Sem álbum" ? -1 : a.localeCompare(b));
+
+      albumGrid.innerHTML = "";
+      if(names.length === 0){
+        emptyHome.classList.remove("hidden");
+        return;
+      }
+      emptyHome.classList.add("hidden");
+
+      names.forEach(name=>{
+        const items = groups[name];
+        const withPhoto = items.filter(i=>i.fotoUrl);
+        const card = document.createElement("div");
+        card.className = "album-card";
+        let coverHtml;
+        if(withPhoto.length >= 4){
+          coverHtml = '<div class="mini">' + withPhoto.slice(0,4).map(i=>`<div style="background-image:url('${i.fotoUrl}')"></div>`).join("") + '</div>';
+        } else if(withPhoto.length > 0){
+          coverHtml = '';
+        } else {
+          coverHtml = '🏷️';
+        }
+        const coverStyle = (withPhoto.length > 0 && withPhoto.length < 4) ? `background-image:url('${withPhoto[0].fotoUrl}')` : "";
+        card.innerHTML =
+          `<div class="album-cover" style="${coverStyle}">${coverHtml}</div>` +
+          `<div class="album-info">` +
+            `<div class="album-name">${escapeHtml(name)}</div>` +
+            `<div class="album-count">${items.length} peça(s)</div>` +
+          `</div>`;
+        card.addEventListener("click", ()=>showAlbum(name));
+        albumGrid.appendChild(card);
+      });
+    }catch(err){
+      console.error("Erro ao renderizar álbuns:", err);
+    }
+  }
+
+  function renderAlbum(){
+    try{
+      if(!photoGrid || !currentAlbum) return;
+      const term = (searchInput ? searchInput.value : "").trim().toLowerCase();
+      const items = allItems.filter(it=>{
+        const key = it.album && it.album.trim() ? it.album.trim() : "Sem álbum";
+        return key === currentAlbum && matchesSearch(it, term);
+      });
+
+      if(albumTitle) albumTitle.textContent = currentAlbum;
+      if(albumSub) albumSub.textContent = items.length + " peça(s)";
+
+      photoGrid.innerHTML = "";
+      items.forEach(it=>{
+        const tile = document.createElement("div");
+        tile.className = "photo-tile";
+        if(it.fotoUrl) tile.style.backgroundImage = `url('${it.fotoUrl}')`;
+        else tile.textContent = "🏷️";
+        let badges = "";
+        if(it.vendido) badges += '<span class="badge badge-vendido">Vendido</span>';
+        else if(it.vaiParaEvento) badges += '<span class="badge badge-evento">Evento</span>';
+        tile.innerHTML += badges +
+          `<div class="price-tag">${escapeHtml(it.codigo)} ${it.preco ? "· " + fmtMoney(it.preco) : ""}</div>`;
+        tile.addEventListener("click", ()=>openLightbox(it));
+        photoGrid.appendChild(tile);
+      });
+    }catch(err){
+      console.error("Erro ao renderizar álbum:", err);
+    }
+  }
+
+  // ---------- Lightbox ----------
+  const modalRoot = document.getElementById("modalRoot");
+  function closeModal(){ if(modalRoot) modalRoot.innerHTML = ""; }
+
+  function openLightbox(it){
+    if(!modalRoot) return;
+    modalRoot.innerHTML =
+      `<div class="overlay" id="lbOverlay"><div class="lightbox">` +
+        `<div class="lb-photo" style="${it.fotoUrl ? `background-image:url('${it.fotoUrl}')` : ""}">${it.fotoUrl ? "" : "🏷️"}</div>` +
+        `<div class="lb-panel">` +
+          `<button class="close-btn" id="lbClose">✕</button>` +
+          `<div class="lb-code">${escapeHtml(it.codigo)}</div>` +
+          `<div class="lb-title">${escapeHtml(it.item || "(sem nome)")}</div>` +
+          (it.marca ? `<div class="lb-field"><b>Marca:</b> ${escapeHtml(it.marca)}</div>` : "") +
+          (it.cor ? `<div class="lb-field"><b>Cor:</b> ${escapeHtml(it.cor)}</div>` : "") +
+          (it.tamanho ? `<div class="lb-field"><b>Tamanho:</b> ${escapeHtml(it.tamanho)}</div>` : "") +
+          (it.obs ? `<div class="lb-field"><b>Obs:</b> ${escapeHtml(it.obs)}</div>` : "") +
+          (it.preco ? `<div class="lb-price">${fmtMoney(it.preco)}</div>` : "") +
+          `<div class="lb-toggles">` +
+            `<div class="lb-toggle ${it.vendido ? "active-vendido" : ""}" id="lbVendido">${it.vendido ? "Vendido" : "Marcar vendido"}</div>` +
+            `<div class="lb-toggle ${it.vaiParaEvento ? "active-evento" : ""}" id="lbEvento">${it.vaiParaEvento ? "Vai pro evento" : "P/ evento"}</div>` +
+          `</div>` +
+          `<button class="lb-delete" id="lbDelete">Excluir peça</button>` +
+        `</div>` +
+      `</div></div>`;
+
+    const overlay = document.getElementById("lbOverlay");
+    if(overlay) overlay.addEventListener("click", e=>{ if(e.target === overlay) closeModal(); });
+    const closeBtn = document.getElementById("lbClose");
+    if(closeBtn) closeBtn.addEventListener("click", closeModal);
+
+    const vendidoBtn = document.getElementById("lbVendido");
+    if(vendidoBtn) vendidoBtn.addEventListener("click", async ()=>{
+      try{
+        const newVal = !it.vendido;
+        await itemsRef.doc(it.codigo).update({
+          vendido:newVal,
+          dataSaida: newVal ? todayISO() : null,
+          motivoSaida: newVal ? "VENDIDO" : null,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        closeModal();
+      }catch(err){ console.error("Erro ao marcar vendido:", err); alert("Não foi possível salvar."); }
+    });
+
+    const eventoBtn = document.getElementById("lbEvento");
+    if(eventoBtn) eventoBtn.addEventListener("click", async ()=>{
+      try{
+        await itemsRef.doc(it.codigo).update({
+          vaiParaEvento: !it.vaiParaEvento,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        closeModal();
+      }catch(err){ console.error("Erro ao marcar evento:", err); alert("Não foi possível salvar."); }
+    });
+
+    const deleteBtn = document.getElementById("lbDelete");
+    if(deleteBtn) deleteBtn.addEventListener("click", async ()=>{
+      try{
+        const ok = confirm("Excluir a peça " + it.codigo + " permanentemente?");
+        if(!ok) return;
+        await itemsRef.doc(it.codigo).delete();
+        closeModal();
+      }catch(err){ console.error("Erro ao excluir:", err); alert("Não foi possível excluir."); }
+    });
+  }
+
+  // ---------- Add modal ----------
+  const fabAdd = document.getElementById("fabAdd");
+  let addPhotoFile = null;
+
+  function openAddModal(){
+    if(!modalRoot) return;
+    const existingAlbums = Array.from(new Set(allItems.map(i => (i.album||"").trim()).filter(Boolean)));
+    modalRoot.innerHTML =
+      `<div class="overlay" id="addOverlay"><div class="add-modal">` +
+        `<h2>Adicionar peça</h2>` +
+        `<div id="addMsg" class="msg"></div>` +
+        `<div class="field"><label>Foto</label>` +
+          `<div class="photo-box">` +
+            `<div class="photo-preview" id="addPhotoPreview">📷</div>` +
+            `<label class="photo-btn" for="addPhotoInput">Tirar / escolher foto</label>` +
+            `<input type="file" id="addPhotoInput" accept="image/*" capture="environment">` +
+          `</div>` +
+        `</div>` +
+        `<div class="row2">` +
+          `<div class="field"><label>Código *</label><input type="text" id="addCodigo" required></div>` +
+          `<div class="field"><label>Álbum</label><input type="text" id="addAlbum" list="albumList" placeholder="ex: Feminino"></div>` +
+        `</div>` +
+        `<datalist id="albumList">${existingAlbums.map(a=>`<option value="${escapeHtml(a)}">`).join("")}</datalist>` +
+        `<div class="field"><label>Item *</label><input type="text" id="addItem" required></div>` +
+        `<div class="row2">` +
+          `<div class="field"><label>Marca</label><input type="text" id="addMarca"></div>` +
+          `<div class="field"><label>Cor</label><input type="text" id="addCor"></div>` +
+        `</div>` +
+        `<div class="row2">` +
+          `<div class="field"><label>Tamanho</label><input type="text" id="addTamanho"></div>` +
+          `<div class="field"><label>Preço (R$)</label><input type="number" step="0.01" id="addPreco"></div>` +
+        `</div>` +
+        `<div class="field"><label>Observação</label><input type="text" id="addObs"></div>` +
+        `<div class="btn-row">` +
+          `<button class="btn btn-primary" id="addSubmit">Adicionar</button>` +
+          `<button class="btn" id="addCancel">Cancelar</button>` +
+        `</div>` +
+      `</div></div>`;
+
+    const overlay = document.getElementById("addOverlay");
+    if(overlay) overlay.addEventListener("click", e=>{ if(e.target === overlay) closeModal(); });
+    const cancelBtn = document.getElementById("addCancel");
+    if(cancelBtn) cancelBtn.addEventListener("click", closeModal);
+
+    addPhotoFile = null;
+    const photoInput = document.getElementById("addPhotoInput");
+    const photoPreview = document.getElementById("addPhotoPreview");
+    if(photoInput){
+      photoInput.addEventListener("change", e=>{
+        const file = e.target.files && e.target.files[0];
+        if(!file) return;
+        addPhotoFile = file;
+        const reader = new FileReader();
+        reader.onload = ev=>{
+          if(photoPreview){ photoPreview.style.backgroundImage = `url('${ev.target.result}')`; photoPreview.textContent = ""; }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function showAddMsg(text, ok){
+      const el = document.getElementById("addMsg");
+      if(!el) return;
+      el.textContent = text;
+      el.className = "msg show " + (ok ? "ok" : "err");
+    }
+
+    const submitBtn = document.getElementById("addSubmit");
+    if(submitBtn) submitBtn.addEventListener("click", async ()=>{
+      try{
+        const codigoEl = document.getElementById("addCodigo");
+        const itemEl = document.getElementById("addItem");
+        const codigo = codigoEl ? codigoEl.value.trim() : "";
+        const item = itemEl ? itemEl.value.trim() : "";
+        if(!codigo || !item){ showAddMsg("Preencha ao menos código e item.", false); return; }
+        submitBtn.disabled = true;
+
+        const existing = await itemsRef.doc(codigo).get();
+        if(existing.exists){
+          const ok = confirm("Já existe uma peça com o código " + codigo + ". Sobrescrever?");
+          if(!ok){ submitBtn.disabled = false; return; }
+        }
+
+        let fotoUrl = null, fotoPath = null;
+        if(addPhotoFile && storage){
+          try{
+            fotoPath = "estoque_fotos/" + codigo + "_" + Date.now() + ".jpg";
+            const ref = storage.ref().child(fotoPath);
+            await ref.put(addPhotoFile);
+            fotoUrl = await ref.getDownloadURL();
+          }catch(upErr){
+            console.error("Erro ao subir foto:", upErr);
+            showAddMsg("Peça será salva, mas a foto falhou.", false);
+          }
+        }
+
+        const precoEl = document.getElementById("addPreco");
+        const preco = precoEl && precoEl.value !== "" ? parseFloat(precoEl.value) : null;
+
+        const data = {
+          codigo, item,
+          album: (document.getElementById("addAlbum")||{}).value || "",
+          marca: (document.getElementById("addMarca")||{}).value || "",
+          cor: (document.getElementById("addCor")||{}).value || "",
+          tamanho: (document.getElementById("addTamanho")||{}).value || "",
+          obs: (document.getElementById("addObs")||{}).value || "",
+          preco,
+          fotoUrl, fotoPath,
+          vendido:false, dataSaida:null, motivoSaida:null,
+          vaiParaEvento:false, local:"br",
+          dataEntrada: todayISO(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          createdAt: existing.exists ? existing.data().createdAt : firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await itemsRef.doc(codigo).set(data, {merge:true});
+        closeModal();
+      }catch(err){
+        console.error("Erro ao adicionar peça:", err);
+        showAddMsg("Não foi possível salvar. Tente de novo.", false);
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
+  if(fabAdd) fabAdd.addEventListener("click", openAddModal);
+
+  // ---------- Real-time listener ----------
+  if(itemsRef){
+    itemsRef.onSnapshot(
+      (snap)=>{
+        try{
+          allItems = [];
+          snap.forEach(doc=>{
+            const d = doc.data();
+            d.codigo = d.codigo || doc.id;
+            allItems.push(d);
+          });
+          setSync(true);
+          allItems.sort((a,b)=>{
+            const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+            const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+            return tb - ta;
+          });
+          if(currentAlbum) renderAlbum(); else renderHome();
+        }catch(err){ console.error("Erro ao processar dados:", err); }
+      },
+      (err)=>{ console.error("Erro no listener do Firestore:", err); setSync(false); }
+    );
+  }
+
+  showHome();
+})();
+</script>
+</body>
+</html>
